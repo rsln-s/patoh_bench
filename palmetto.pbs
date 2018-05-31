@@ -1,0 +1,9 @@
+#!/bin/bash
+#PBS -N kahypar
+#PBS -l select=1:ncpus=16:mem=62gb,walltime=72:00:00
+
+module add python/3.4
+
+cd /zfs/safrolab/users/rshaydu/patoh_bench/$dir/$subdir
+
+python3 run_for_dir.py -p 16

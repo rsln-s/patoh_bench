@@ -29,7 +29,7 @@ def get_first_word_after_substring(output, str_to_look_for):
 	return re.match("[\w\=\-\_]+", outsplit[1].decode('ascii')).group(0)
 
 def run_patoh(hgraph_filepath, executable_filepath="/home/rshaydu/patoh_bench/build/Linux-x86_64/patoh", num_parts=2, imbal=0.03, num_runs=1, processes=1):
-		cmd = " ".join([executable_filepath, hgraph_filepath, str(num_parts), "IB="+str(imbal), "A1="+str(num_parts*10), "NR="+str(num_runs), "UM=U PQ=D "])
+		cmd = " ".join([executable_filepath, hgraph_filepath, str(num_parts), "PQ=Q", "NR="+str(num_runs),"UM=U", "A1="+str(num_parts*10),  "IB="+str(imbal)])
 		print("Running", cmd)
 		process = Popen(shlex.split(cmd), stdout=PIPE)
 		(output, err) = process.communicate()
@@ -38,14 +38,12 @@ def run_patoh(hgraph_filepath, executable_filepath="/home/rshaydu/patoh_bench/bu
 				print("Encountered nonzero exit code {}. Exiting.".format(exit_code))
 				print(output)
 				sys.exit(1)
-		graph = get_first_word_after_substring(output, b'Hypergraph : ')
+		graph = get_first_word_after_substring(output, b'PaToH:')
 		cutn_min = get_first_int_after_substring(output, b'Cut Cost: ')
-		nvtx = get_first_int_after_substring(output, b'#Cells : ')
-		nedge = get_first_int_after_substring(output, b'#Nets : ')
-		npins = get_first_int_after_substring(output, b'#Pins : ')
 
+		imbal = 1.0 + imbal
 		unique_id = str(graph)+str(num_parts)+str(imbal)
-		return [unique_id, graph, nvtx, nedge, num_parts, imbal, cutn_min]
+		return [unique_id, graph, "N/A", "N/A", num_parts, imbal, cutn_min]
 		
 
 parser = argparse.ArgumentParser()
@@ -59,11 +57,11 @@ inp_files_all = os.listdir(".")
 inp_files = list(filter(lambda x: ".patoh" in x and ".part." not in x, inp_files_all))
 
 results = []
-parts = [2,4,8,16,32,64,128] 
+parts = [2,4,8,16,32,64,128,512,1024] 
 imbals = [0.03, 0.05, 0.10]
 
 for f in inp_files:
-	results += Parallel(n_jobs=args.processes)(delayed(run_patoh)(f, num_parts=p[0], imbal=p[1]) for p in product(parts,imbals))
+	results += Parallel(n_jobs=args.processes)(delayed(run_patoh)(f, num_runs=args.num_runs, num_parts=p[0], imbal=p[1]) for p in product(parts,imbals))
 
 results = sorted(results, key=operator.itemgetter(1, 4, 5))
 with open(outfilename, 'w') as csvfile:
